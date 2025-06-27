@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drink Duel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrollbars from popping up during animation */
+        }
+        .font-bangers {
+            font-family: 'Bangers', cursive;
+        }
+        #wheelCanvas {
+            transition: transform 5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .pointer {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 35px solid #f59e0b; /* Amber 500 */
+        }
+    </style>
+</head>
+<body class="bg-sky-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Main Title -->
+    <h1 class="font-bangers text-6xl md:text-8xl text-amber-400 text-center tracking-wider" style="text-shadow: 4px 4px 0px #082f49;">
+        DRINK DUEL
+    </h1>
+
+    <!-- Wheel and Pointer Container -->
+    <div class="relative flex flex-col items-center justify-center my-8">
+        <div class="pointer z-10"></div>
+        <canvas id="wheelCanvas" width="380" height="380" class="mt-[-15px]"></canvas>
+    </div>
+    
+    <!-- Spin Button -->
+    <button id="spinButton" class="font-bangers text-4xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white px-12 py-4 rounded-full shadow-lg transition-transform duration-150 ease-in-out transform hover:scale-105 active:scale-100" style="text-shadow: 2px 2px 0px #4c0519;">
+        Spin the Wheel!
+    </button>
+
+    <!-- Modal for Result -->
+    <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 ease-out scale-95 opacity-0" id="modalContent">
+            <div class="p-6 md:p-8 text-center">
+                <h2 id="game-name" class="font-bangers text-4xl md:text-5xl text-sky-800 tracking-wide">Game Title</h2>
+                <p id="game-points" class="text-xl font-bold text-amber-500 my-2">-- Points</p>
+                <p id="game-description" class="text-lg mt-4 mb-6">Description of the game goes here.</p>
+                <button id="closeModal" class="font-bangers text-3xl bg-sky-600 hover:bg-sky-700 text-white px-10 py-3 rounded-full shadow-md transition-transform duration-150 hover:scale-105">
+                    Let's Go!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const games = [
+            { name: "Conga Time", description: "Player 1, it’s your job to get the whole group to join you in a conga line! Player 2... It’s your job to prevent this from ever happening.", points: 15 },
+            { name: "Beer Pong", description: "You know the rules...get creative.", points: 10 },
+            { name: "Flip Cup", description: "You know the rules... get creative.", points: 10 },
+            { name: "How Low Can You Go?", description: "LIMBO! Your Dictator will hold an object in place for 3 rounds at any height they choose. First to fail loses.", points: 20 },
+            { name: "Run For Your Life", description: "1st to reach the dictator wins.", points: 10 },
+            { name: "Operation Giggle", description: "First to make the dictator laugh wins.", points: 25 },
+            { name: "I Hide, You Seek", description: "The dictator is hidden. Look around the group... who is missing? Now go find them. First to find them wins.", points: 15 },
+            { name: "Foragers", description: "The First to bring any form of wildlife back to the dictator wins.", points: 20 },
+            { name: "Statue Your Liberty!", description: "First to move loses.", points: 10 },
+            { name: "American Ninja", description: "Dulers count to 3. On 3, chose your ninja pose and take turns attempting to eliminate the others' hands. First person with no active limbs loses.", points: 15 },
+            { name: "SHOTGUN!", description: "Shotgun a new unopened drink. First to finish it all wins.", points: 20 },
+            { name: "Rock, Paper, Scissors", description: "You know the rules. 3 rounds. The person with the most wins after the 3 rounds wins.", points: 10 },
+            { name: "Throw it up!", description: "Present your best frisbee trick in front of your dictator. Taking into account any final words from the Jury, the Dictator will award 1 player the points.", points: 15 },
+            { name: "Get Dizzy!", description: "On the dictator's mark, duelers will circle their “dizzy bat” 3 times before running towards the dictator (who could be a moving object). First to secure the dictator receives points.", points: 25 },
+            { name: "Dancing with the stars", description: "Duelers will simultaneously perform their best dance moves. The dictator will then stand next to each player and ask the jury to ‘Cheer” or “boo” the performer. The dancer who wins the heart of the jury wins.", points: 30 },
+            { name: "Karry you Oke!", description: "Karaoke time... pick a song and get the group to sing along. The dueler with the best participation on their song wins.", points: 20 },
+            { name: "Shark Tank", description: "Pitch your best business idea to the dictator. The best idea wins a $300k investment from the group!! JK JK. You get the points!", points: 30 },
+            { name: "Freestyle Rap Battle", description: "Each player has 30 seconds to give their best rap lyrics to the group. Winner selected by game master.", points: 15 },
+            { name: "Follow the Leader", description: "One player has 10 minutes to get the group to move from the current room to a new room. The other player's job is to stop them.", points: 30 },
+            { name: "Drinking Buddies", description: "First player to convince someone in the group to do a shot with them wins. Loser takes their buddy's shot.", points: 20 },
+            { name: "Handstand Competition", description: "Player who can hold their handstand the longest wins.", points: 10 },
+            { name: "The Joker", description: "First player to make the game master laugh wins.", points: 10 },
+            { name: "The Hole to China", description: "Just start digging. Player with the deepest hole after 5 minutes wins.", points: 20 },
+            { name: "Swiper no Swiping", description: "First player to successfully steal an item currently on someone from the group wins (ex: phone).", points: 25 },
+            { name: "Mixologist Challenge", description: "Each player will have 10 minutes to concoct the best drink they can. Drinks will be judged by the game master.", points: 15 },
+            { name: "Jersey Swap", description: "First player to convince someone in the group to swap outfits wins.", points: 15 },
+            { name: "Treasure Hunt", description: "The dictator will hide an item. Each player will search for this item until one of the players finds it.", points: 25 },
+            { name: "Finish the Song", description: "The dictator will play a song. First player to guess the song and finish the lyrics wins.", points: 10 },
+            { name: "Table Top a Guy", description: "Recruit a friend to help push a guy in your group over you. First player to successfully table top wins.", points: 20 },
+            { name: "Minion Challenge", description: "First player to find a banana wins.", points: 10 },
+            { name: "Make Your Best Impression", description: "Give your best impression. If the dictator correctly guesses who you are imitating, you get points. Multiple winners possible.", points: 10 },
+            { name: "Squid Games", description: "Each player must choose someone to play a game with. If you win your game, you win points. Multiple winners possible.", points: 10 },
+            { name: "Traffic Jam", description: "A simple game of red light, green light. The dictator is the traffic conductor. First player to reach the dictator wins.", points: 15 },
+            { name: "Squat the Dictator", description: "Convince the dictator to let you squat them. Good luck.", points: 25},
+            { name: "Walk the Plank", description: "Your dictator will draw a line. Walk it without stepping out of line.", points: 10 },
+            { name: "Plank Off", description: "Hold a forearm or hand plank. First person to drop loses.", points: 20 },
+            { name: "High Noon Duel", description: "Each person grabs a water gun. Line up back to back. Walk three paces, turn, aim, fire.", points: 10 },
+            { name: "Sleeper Agent", description: "Dictator assigns each dueler a random word and person. Your goal is to make your assigned person say the word. If they recognize the word before saying it, you lose.", points: 20 },
+            { name: "Captains", description: "Duelers are team captains. Choose a game (red rover, tug-of-war, freeze tag, human pyramids) and lead your team to victory.", points: 20 },
+            { name: "Spiderweb", description: "Duelers are captains. Choose 4+ people each, link arms randomly in a circle. Whoever’s team untangles first wins.", points: 20 },
+            { name: "Football Frenzy", description: "Each Dueler chooses a QB. Run 3 routes, defended by the other dueler. Most catches wins.", points: 15 },
+            { name: "Chopped", description: "Each dueler makes an appetizer in 5 minutes. Judge decides the best dish.", points: 20 },
+            { name: "Tortilla Slap", description: "Fill your mouth with a drink. Slap each other with a tortilla. Whoever spits their drink out first loses.", points: 15 },
+            { name: "Laugh Off Reverse", description: "Duelers fill their mouths with drinks. The group makes jokes. Whoever spits first loses.", points: 10 },
+            { name: "Arm Wrestle", description: "Self explanatory. Evening the odds is encouraged.", points: 10 },
+            { name: "Thumb War", description: "Best of 3. Get your thumbs ready.", points: 10 },
+            { name: "Silent Game", description: "Starting now, shut up. Whoever speaks first loses.", points: 20 },
+            { name: "Staring Competition", description: "The Dictator picks 1 person for both Duelers to stare at. Whoever is noticed, or looks away, first loses.", points: 10 },
+            { name: "Shadow Puppet", description: "Dictator assigns a person for each Dueler to mimic. Whoever is noticed first loses.", points: 20 },
+            { name: "Reverse Jesus", description: "Steal a person's drink and replace it with a non-alcoholic one in the same cup, unnoticed.", points: 20 },
+            { name: "Communion Challenge", description: "Find bread and convince 3 people to eat it out of your hand. First to do so wins.", points: 15 },
+            { name: "Animal Kink", description: "Both duelers imitate Animals. Whoever has the best imitation wins.", points: 10 },
+            { name: "Game Time", description: "Convince a group to play a game of your choice. Whoever can convince anyone to play a game first wins.", points: 15 },
+            { name: "Hot Take", description: "Duelers pitch their most controversial idea and win the crowd over (or judge).", points: 10 },
+        ];
+
+        const wheelCanvas = document.getElementById('wheelCanvas');
+        const ctx = wheelCanvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        const resultModal = document.getElementById('resultModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModal = document.getElementById('closeModal');
+        const gameNameEl = document.getElementById('game-name');
+        const gamePointsEl = document.getElementById('game-points');
+        const gameDescriptionEl = document.getElementById('game-description');
+
+        const numSegments = games.length;
+        const segmentAngle = (2 * Math.PI) / numSegments;
+        const centerX = wheelCanvas.width / 2;
+        const centerY = wheelCanvas.height / 2;
+        const radius = wheelCanvas.width / 2 - 10;
+        let currentRotation = 0;
+        let isSpinning = false;
+        
+        // Fun color palette
+        const colors = ["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#ec4899"];
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            
+            for (let i = 0; i < numSegments; i++) {
+                const startAngle = i * segmentAngle;
+                const endAngle = startAngle + segmentAngle;
+
+                // Draw segment
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#082f49'; // Dark blue for borders
+                ctx.stroke();
+
+                // Draw text
+                ctx.save();
+                ctx.rotate(startAngle + segmentAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 12px Inter";
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowBlur = 3;
+                ctx.fillText(games[i].name, radius - 10, 0);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+        
+        function spin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinButton.disabled = true;
+            spinButton.classList.remove('hover:bg-rose-700', 'hover:scale-105');
+            spinButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const randomSpins = Math.floor(Math.random() * 5) + 5; // 5 to 9 full spins
+            const randomStopAngle = Math.random() * 2 * Math.PI; // Random stopping point
+            const totalRotation = randomSpins * 2 * Math.PI + randomStopAngle;
+
+            currentRotation += totalRotation;
+            
+            wheelCanvas.style.transform = `rotate(${currentRotation}rad)`;
+            
+            setTimeout(() => {
+                const finalAngle = currentRotation % (2 * Math.PI);
+                const winningSegmentIndex = Math.floor(numSegments - (finalAngle / (2 * Math.PI) * numSegments)) % numSegments;
+                const winningGame = games[winningSegmentIndex];
+                
+                showResult(winningGame);
+                
+                isSpinning = false;
+                spinButton.disabled = false;
+                spinButton.classList.add('hover:bg-rose-700', 'hover:scale-105');
+                spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            }, 5000); // Corresponds to the CSS transition duration
+        }
+
+        function showResult(game) {
+            gameNameEl.textContent = game.name;
+            gamePointsEl.textContent = `${game.points} Points`;
+            gameDescriptionEl.textContent = game.description;
+
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function hideResult() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 300);
+        }
+
+        spinButton.addEventListener('click', spin);
+        closeModal.addEventListener('click', hideResult);
+        resultModal.addEventListener('click', (e) => {
+            if (e.target === resultModal) {
+                hideResult();
+            }
+        });
+
+        // Initial draw of the wheel
+        drawWheel();
+
+    </script>
+</body>
+</html>

@@ -239,7 +239,9 @@
         // --- CORE GAME LOGIC ---
         function selectDuelists() {
             if (currentPlayers.length < 2) {
-                alert("Not enough players to start a duel!");
+                // Using a custom modal/alert in the future would be better than window.alert
+                console.error("Not enough players to start a duel!");
+                duelistDisplay.innerHTML = `<p class="text-xl font-bold text-red-400">Error: Not enough players!</p>`;
                 return false;
             }
             let player1Index = Math.floor(Math.random() * currentPlayers.length);
@@ -409,8 +411,13 @@
                     await signInAnonymously(auth);
                 }
             } catch(error) {
-                console.error("Authentication Error:", error);
-                leaderboardLoading.innerHTML = `<p class="text-red-400">Auth failed. Leaderboard is disabled.</p>`;
+                console.error("Custom token auth failed, falling back to anonymous.", error);
+                try {
+                    await signInAnonymously(auth);
+                } catch (anonError) {
+                    console.error("Critical: Anonymous sign-in also failed:", anonError);
+                    leaderboardLoading.innerHTML = `<p class="text-red-400">Auth failed. Leaderboard is disabled.</p>`;
+                }
             }
 
             drawWheel();
